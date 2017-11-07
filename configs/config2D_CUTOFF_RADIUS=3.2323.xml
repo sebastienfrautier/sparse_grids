@@ -29,7 +29,7 @@
     cutoff-radius="3.23232323232"
     linked-cell-size="2.5 ; 2.5"
     k_B="1.0"
-    block-size="BLOCK_SIZE"
+    block-size="100"
 
     south-west="periodic"        south="periodic"        south-east="periodic"
     west="periodic"                                      east="periodic"

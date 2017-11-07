@@ -7,7 +7,7 @@ BASE_DIR = os.getcwd()      # if we get amibitous, this could become a command l
 output_folder = 'configs'   # this too
 
 # these are defautls which are used if certain parameters aren't defined for generateConfig_2D
-default_params = {'TEMP':2.5, 'V_x':1, 'V_y':1.5, 'DELTA_T':0.002, 'TIMESTEPS':1000,
+default_params = {'TEMP':2.5, 'V_x':1, 'V_y':1.5, 'DELTA_T':0.002, 'TIMESTEPS':1000, 'BLOCK_SIZE':100,
                   'CUTOFF_RADIUS':2.5, 'LINKED_CELL_SIZE_X':2.5, 'LINKED_CELL_SIZE_Y':2.5} 
 
 def generateConfig_2D(params):
