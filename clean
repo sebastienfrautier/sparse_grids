@@ -1,0 +1,1 @@
+rm *.vtk *.checkpoint *.dat
