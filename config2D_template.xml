@@ -23,8 +23,8 @@
   <checkpoint-configuration filename="Checkpoint2D" write-every-timestep="33"></checkpoint-configuration>
 
   <domain-configuration
-    molecules-per-direction="46; 47"
-    domain-size="60.0 ; 60.0 "
+    molecules-per-direction="MOL_X; MOL_Y"
+    domain-size="DOMAIN_SIZE ; DOMAIN_SIZE"
     domain-offset="0.0 ; 0.0 ; 0.0"
     cutoff-radius="CUTOFF_RADIUS"
     linked-cell-size="LINKED_CELL_SIZE_X ; LINKED_CELL_SIZE_Y"
