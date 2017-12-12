@@ -8,6 +8,9 @@ import subprocess
 import collections
 import random
 import sys
+import constraint as csp
+import argparse
+
 
 BASE_DIR = os.getcwd()      # if we get amibitous, this could become a command line param
 output_folder = 'configs'   # this too
@@ -35,53 +38,77 @@ if __name__ == '__main__':
     path = os.path.join(BASE_DIR, output_folder)
     if not os.path.exists(path): os.mkdir(path)
 
+
+    # setup args
+    parser = argparse.ArgumentParser(description='Mamico Wrapper')
+
+    parser.add_argument('-density', help='set density range')
+
+    parser.add_argument('-molecule', help='set molecules in both directions')
+
+    parser.add_argument('-domain', help='set domain range in both directions')
+
+    parser.add_argument('-linked', help='linked range')
+
+    parser.add_argument('-block', help='block range')
+
+    parser.add_argument('-cutoff', help='cutoff range')
+
+    parser.add_argument('-n', help='number of draws')
+
+    args = parser.parse_args()
+
+
+    # setup contraint problem
+    problem = csp.Problem()
+
+    problem.addVariable("density", [random.choice(range(20, int(args.density) if args.density else 100))])
+
+    problem.addVariables(["MOL_X", "MOL_Y"], range(2, int(args.molecule) if args.molecule else 20))
+
+    problem.addVariables(["DOMAIN_SIZE_X", "DOMAIN_SIZE_Y"], range(2, int(args.domain) if args.domain else 20))
+
+    problem.addVariables(['LINKED_CELL_SIZE_Y', 'LINKED_CELL_SIZE_X'], np.linspace(5,20,int(args.linked) if args.linked else 10))
+
+    problem.addVariables(["BLOCK_SIZE"], range(2, int(args.block) if args.block else 10))
+
+    problem.addVariables(["CUTOFF_RADIUS"], range(2, int(args.cutoff) if args.cutoff else 5))
+
+    problem.addConstraint(lambda density, x, y, a, b: (x * y) / (a * b) == density,
+                          ("density", "MOL_X", "MOL_Y", "DOMAIN_SIZE_X", "DOMAIN_SIZE_Y"))
+
+    problem.addConstraint(lambda block, x, y: x % block and y % block,
+                          ("BLOCK_SIZE", "MOL_X", "MOL_Y"))
+
+    problem.addConstraint(lambda cutoff, linked_x, linked_y: cutoff < linked_x and cutoff < linked_x,
+                          ("CUTOFF_RADIUS", "LINKED_CELL_SIZE_X", "LINKED_CELL_SIZE_Y"))
+
+    # generate all solutions
+    #solution = problem.getSolutions()
+
+
+
+    # pick n random elems
+    draws = int(args.n) if args.n else 100
+    print 'running with %s draws' % draws
+
     times = []
-    for i in range(0,int(sys.argv[1])):
 
-        full_param_space = collections.OrderedDict({"MOL_X": np.linspace(20, 80, 100)
-                                                        ,"MOL_Y": np.linspace(20, 80, 100)
-                                                        , 'LINKED_CELL_SIZE_Y': np.linspace(1, 20, 100)
-                                                        , 'LINKED_CELL_SIZE_X': np.linspace(1, 20, 100)
-                                                        , 'CUTOFF_RADIUS': np.linspace(0, 20, 100)
-                                                        , 'BLOCK_SIZE': range(2, 100)
-                                                        , 'DOMAIN_SIZE': range(1, 100)})
+    for i in range(0,draws):
 
-        constrained_random_config = collections.OrderedDict({})
+        #constrained_random_config =random.choice(solution)
+        constrained_random_config =problem.getSolution()
 
-        for k, v in full_param_space.items():
-
-            if k == 'BLOCK_SIZE':
-
-                block_size_choice = random.choice(full_param_space[k])
-
-                while (constrained_random_config['DOMAIN_SIZE'] % block_size_choice) != 0:
-                    block_size_choice = random.choice(full_param_space[k])
-
-                constrained_random_config[k] = block_size_choice
-
-            elif k == 'CUTOFF_RADIUS':
-
-                cutoff_radius_choice = random.choice(full_param_space[k])
-                while (constrained_random_config['LINKED_CELL_SIZE_X'] < cutoff_radius_choice and constrained_random_config[
-                    'LINKED_CELL_SIZE_Y'] < cutoff_radius_choice):
-                    cutoff_radius_choice = random.choice(full_param_space[k])
-
-                constrained_random_config[k] = cutoff_radius_choice
-
-            else:
-                constrained_random_config[k] = random.choice(full_param_space[k])
-
-
-        for param,val in constrained_random_config.items():
-            print param,val
-
-            #config, params = generateConfig_2D({param:val})
 
         config, params = generateConfig_2D(constrained_random_config)
+        print config
+        print params
+
         filename = reduce(lambda s, item: '{0}_{1}={2:0.4f}'.format(s, *item),
                               params.items(), 'config2D') + '.xml'
 
         path = os.path.join(BASE_DIR, output_folder, filename)
+        print path
         with open(path, 'w+') as f: f.write(config)
 
         start = time.time()
