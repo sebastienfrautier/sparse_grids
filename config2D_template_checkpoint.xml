@@ -20,7 +20,7 @@
   ></simulation-configuration>
 
   <vtk-configuration filename="Molecules" write-every-timestep="10"></vtk-configuration>
-  <checkpoint-configuration filename="CHECKPOINT" write-every-timestep="999"></checkpoint-configuration>
+  <checkpoint-configuration filename="Checkpoint2D" write-every-timestep="999"></checkpoint-configuration>
 
 
 
@@ -32,6 +32,8 @@
     linked-cell-size="LINKED_CELL_SIZE_X ; LINKED_CELL_SIZE_Y"
     k_B="1.0"
     block-size="BLOCK_SIZE"
+
+    init-from-checkpoint="CHECKPOINT"
 
     south-west="periodic"        south="periodic"        south-east="periodic"
     west="periodic"                                      east="periodic"
