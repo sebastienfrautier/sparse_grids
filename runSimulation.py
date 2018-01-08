@@ -1,5 +1,4 @@
 #!/usr/bin/python
-
 import os
 import csv
 import time
@@ -35,9 +34,6 @@ def generateConfig_2D(params, checkpoint=None):
             template = template.replace(param, str(val))
         return template, defaults
 
-
-
-
 def write_times(times, path = 'out.csv'):
     with open(path, 'w+') as f:
         writer = csv.writer(f)
@@ -49,47 +45,28 @@ if __name__ == '__main__':
 
     print 'get pickled config'
 
-    full_config = pickle.load(open("mamico_v1.1/full_config_lists_full.1111", "rb"))
+    full_config = pickle.load(open("configs_2D_param_space", "rb"))
 
-
-
-
-
-
-    n = 500
+    n = 5
 
     print 'running with %s configs' % n
     times = []
     for i in range(0, n):
         print '------------------ '+ str((1.0*i)/n)
-
-
         print 'warming up'
 
-        this_config = random.choice(full_config)
-
-        this_config['CHECKPOINT'] = 'checkpoints/'+''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
-
-        config, params = generateConfig_2D(this_config)
-
-        filename = reduce(lambda s, item: ''.format(s, *item),
+        config = random.choice(full_config)
+        filename = reduce(lambda s, item: '{0}_{1}={2}'.format(s, *item),
                           this_config.items(), 'config2D') + '.xml'
         path = os.path.join(BASE_DIR, output_folder, filename)
-        with open(path, 'w+') as f: f.write(config)
 
+        config['CHECKPOINT'] = 'checkpoints/'+''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
+        config, params = generateConfig_2D(config)
+        with open(path, 'w+') as f: f.write(config)
         res = subprocess.call(["./simplemd", os.path.join('..', path)])
 
-
-        #####
-
-        this_config['CHECKPOINT'] = this_config['CHECKPOINT']+'_999'
-
-        config, params = generateConfig_2D(this_config,True)
-
-        filename = reduce(lambda s, item: ''.format(s, *item),
-                          full_config[i].items(), 'config2D') + '.xml'
-
-        path = os.path.join(BASE_DIR, output_folder, filename)
+        config['CHECKPOINT'] = config['CHECKPOINT']+'_999'
+        config, params = generateConfig_2D(config, True)
         with open(path, 'w+') as f: f.write(config)
 
         start = time.time()
