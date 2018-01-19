@@ -14,7 +14,7 @@ import string
 
 BASE_DIR = os.getcwd()      # if we get amibitous, this could become a command line param
 output_folder = 'configs'   # this too
-output_file = '16_1_2018_1500_runs.csv'
+output_file = '16_1_2018_1500_runs_kai.csv'
 
 def generateConfig_2D(params, checkpoint=None):
     # these are defautls which are used if certain parameters aren't defined for generateConfig_2D
@@ -40,23 +40,34 @@ def write_times(times, path = 'out.csv'):
         writer = csv.writer(f)
         writer.writerows(times)
 
+def density(mol_x, mol_y, domain_x, domain_y):
+    return (1.0*mol_x*mol_y)/(1.0*domain_x*domain_y) < 1
+
 def generateParamSpace():
     problem = csp.Problem()
     solver = csp.BacktrackingSolver()
     problem.addVariables(["MOL_X", "MOL_Y"], range(15, 100, 5))
     problem.addVariables(["DOMAIN_SIZE_X", "DOMAIN_SIZE_Y"], range(30, 75, 5))
     problem.addVariables(['LINKED_CELL_SIZE_Y', 'LINKED_CELL_SIZE_X'], np.arange(5, 15, 2.5))
-    problem.addVariables(["BLOCK_SIZE"], range(1, 10))
-    problem.addVariables(["CUTOFF_RADIUS"], np.arange(0.25, 5.25, 0.25))
-    problem.addConstraint(lambda x, y, a, b: ((x * y) / (a * b)) < 2,
+    problem.addVariables(["BLOCK_SIZE"], [1,10,100,1000,10000]) #exp, falls schwierig, weg
+    problem.addVariables(["CUTOFF_RADIUS"], np.arange(1.25, 5.25, 0.25))
+
+    problem.addConstraint(lambda x, y, a, b: ((1.0*x * y) / (1.0*a * b)) < 1.0,
+                      ("MOL_X", "MOL_Y", "DOMAIN_SIZE_X", "DOMAIN_SIZE_Y"))
+
+    problem.addConstraint(lambda x, y, a, b: x < 0.9*a and y < 0.9*b,
                           ("MOL_X", "MOL_Y", "DOMAIN_SIZE_X", "DOMAIN_SIZE_Y"))
-    problem.addConstraint(lambda block, x, y: (x % block == 0) and (y % block == 0),
-                          ("BLOCK_SIZE", "DOMAIN_SIZE_X", "DOMAIN_SIZE_Y"))  # you sure about this one? yes!
-    problem.addConstraint(lambda block, x, y: 5*block < x and 5*block < y,
-                          ("BLOCK_SIZE", "LINKED_CELL_SIZE_X", "LINKED_CELL_SIZE_Y")) 
-    problem.addConstraint(lambda cutoff, linked_x, linked_y: 2 * cutoff < min(linked_x, linked_y),
+
+    problem.addConstraint(lambda dom_x, dom_y, cell_x, cell_y: dom_x % cell_x  >= 4 and dom_y % cell_y  >= 4 ,
+                          ("DOMAIN_SIZE_X","DOMAIN_SIZE_X", "LINKED_CELL_SIZE_X", "LINKED_CELL_SIZE_Y"))
+
+    problem.addConstraint(lambda cutoff, linked_x, linked_y: cutoff <= min(linked_x, linked_y),
                           ("CUTOFF_RADIUS", "LINKED_CELL_SIZE_X", "LINKED_CELL_SIZE_Y"))
-    print 'generate param space'
+
+    ###problem.addConstraint(density,["MOL_X", "MOL_Y", "DOMAIN_SIZE_X", "DOMAIN_SIZE_X"])
+
+    print 'generate param space_'
+
     return  problem.getSolutions()
 
 
@@ -70,6 +81,13 @@ if __name__ == '__main__':
     print 'sampling %s configs' % n
     full_config = random.sample(all_configs, n)
 
+    for i in full_config:
+        density = (i['MOL_X'] * i['MOL_X'])/ (i['DOMAIN_SIZE_X']  * i['DOMAIN_SIZE_Y'])
+        if density > 1:
+            for k,v in i.items():
+                print k,v
+
+    '''
     print 'running with %s configs' % n
     times = []
     for i in range(0, n):
@@ -98,3 +116,4 @@ if __name__ == '__main__':
         times.append((params, dt))
 
     write_times(times, path = output_file)
+    '''
