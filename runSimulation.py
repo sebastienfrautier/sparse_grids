@@ -14,7 +14,7 @@ import string
 
 BASE_DIR = os.getcwd()      # if we get amibitous, this could become a command line param
 output_folder = 'configs'   # this too
-output_file = '16_1_2018_1500_runs_kai.csv'
+output_file = 'data/22_01_2018_1500_runs.csv'
 
 def generateConfig_2D(params, checkpoint=None):
     # these are defautls which are used if certain parameters aren't defined for generateConfig_2D
@@ -41,53 +41,36 @@ def write_times(times, path = 'out.csv'):
         writer.writerows(times)
 
 def density(mol_x, mol_y, domain_x, domain_y):
-    return (1.0*mol_x*mol_y)/(1.0*domain_x*domain_y) < 1
+    return (1.0*mol_x*mol_y)/(1.0*domain_x*domain_y)
 
 def generateParamSpace():
     problem = csp.Problem()
-    solver = csp.BacktrackingSolver()
     problem.addVariables(["MOL_X", "MOL_Y"], range(15, 100, 5))
     problem.addVariables(["DOMAIN_SIZE_X", "DOMAIN_SIZE_Y"], range(30, 75, 5))
     problem.addVariables(['LINKED_CELL_SIZE_Y', 'LINKED_CELL_SIZE_X'], np.arange(5, 15, 2.5))
-    problem.addVariables(["BLOCK_SIZE"], [1,10,100,1000,10000]) #exp, falls schwierig, weg
-    problem.addVariables(["CUTOFF_RADIUS"], np.arange(1.25, 5.25, 0.25))
+    problem.addVariables(["BLOCK_SIZE"], [10**i for i in range(5)])
+    problem.addVariables(["CUTOFF_RADIUS"], np.arange(1.2, 6.2, 0.2))
 
-    problem.addConstraint(lambda x, y, a, b: ((1.0*x * y) / (1.0*a * b)) < 1.0,
-                      ("MOL_X", "MOL_Y", "DOMAIN_SIZE_X", "DOMAIN_SIZE_Y"))
-
-    problem.addConstraint(lambda x, y, a, b: x < 0.9*a and y < 0.9*b,
-                          ("MOL_X", "MOL_Y", "DOMAIN_SIZE_X", "DOMAIN_SIZE_Y"))
-
-    problem.addConstraint(lambda dom_x, dom_y, cell_x, cell_y: dom_x % cell_x  >= 4 and dom_y % cell_y  >= 4 ,
-                          ("DOMAIN_SIZE_X","DOMAIN_SIZE_X", "LINKED_CELL_SIZE_X", "LINKED_CELL_SIZE_Y"))
-
+    problem.addConstraint(lambda molecules, direction: molecules <= direction, ("MOL_X","DOMAIN_SIZE_X"))
+    problem.addConstraint(lambda molecules, direction: molecules <= direction, ("MOL_Y","DOMAIN_SIZE_Y")) 
+    problem.addConstraint(lambda domain_size, cell_size: (domain_size % cell_size) == 0, ("DOMAIN_SIZE_X", "LINKED_CELL_SIZE_X"))
+    problem.addConstraint(lambda domain_size, cell_size: (domain_size % cell_size) == 0, ("DOMAIN_SIZE_Y", "LINKED_CELL_SIZE_Y"))
+    problem.addConstraint(lambda block_size, cell_size: (cell_size % block_size)  >= 4,  ("BLOCK_SIZE", "LINKED_CELL_SIZE_X"))
+    problem.addConstraint(lambda block_size, cell_size: (cell_size % block_size)  >= 4,   ("BLOCK_SIZE", "LINKED_CELL_SIZE_Y"))
+    problem.addConstraint(lambda *args: density(*args) < 1.0, ("MOL_X", "MOL_Y", "DOMAIN_SIZE_X", "DOMAIN_SIZE_Y"))
     problem.addConstraint(lambda cutoff, linked_x, linked_y: cutoff <= min(linked_x, linked_y),
                           ("CUTOFF_RADIUS", "LINKED_CELL_SIZE_X", "LINKED_CELL_SIZE_Y"))
-
-    ###problem.addConstraint(density,["MOL_X", "MOL_Y", "DOMAIN_SIZE_X", "DOMAIN_SIZE_X"])
-
-    print 'generate param space_'
-
-    return  problem.getSolutions()
+    return problem.getSolutions()
 
 
-if __name__ == '__main__':
+def runSimulation():
     path = os.path.join(BASE_DIR, output_folder)
     if not os.path.exists(path): os.mkdir(path)
 
     n = 1500
-    #full_config = pickle.load(open("configs_2D_param_space", "rb"))
     all_configs = generateParamSpace()
-    print 'sampling %s configs' % n
     full_config = random.sample(all_configs, n)
 
-    for i in full_config:
-        density = (i['MOL_X'] * i['MOL_X'])/ (i['DOMAIN_SIZE_X']  * i['DOMAIN_SIZE_Y'])
-        if density > 1:
-            for k,v in i.items():
-                print k,v
-
-    '''
     print 'running with %s configs' % n
     times = []
     for i in range(0, n):
@@ -95,9 +78,7 @@ if __name__ == '__main__':
         print 'warming up'
 
         config = full_config[i] #config = random.choice(full_config)
-
-        filename = reduce(lambda s, item: '{0}_{1}={2}'.format(s, *item),
-                          config.items(), 'config2D') + '.xml'
+        filename = reduce(lambda s, item: '{0}_{1}={2}'.format(s, *item), config.items(), 'config2D') + '.xml'
         path = os.path.join(BASE_DIR, output_folder, filename)
 
         config['CHECKPOINT'] = 'checkpoints/'+''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
@@ -116,4 +97,6 @@ if __name__ == '__main__':
         times.append((params, dt))
 
     write_times(times, path = output_file)
-    '''
+
+if __name__ == '__main__':
+    runSimulation()
