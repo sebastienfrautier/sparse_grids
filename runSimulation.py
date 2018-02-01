@@ -43,8 +43,8 @@ def write_times(times, path = 'out.csv'):
 def generateParamSpace():
     problem = csp.Problem()
     problem.addVariables(["MOL_X", "MOL_Y"], range(15, 100, 5))
-    problem.addVariables(["DOMAIN_SIZE_X", "DOMAIN_SIZE_Y"], range(30, 75, 5))
-    problem.addVariables(['LINKED_CELL_SIZE_Y', 'LINKED_CELL_SIZE_X'], np.arange(5, 15, 2.5))
+    problem.addVariables(["DOMAIN_SIZE_X", "DOMAIN_SIZE_Y"], range(25, 70, 5))
+    problem.addVariables(['LINKED_CELL_SIZE_Y', 'LINKED_CELL_SIZE_X'], np.arange(1.25, 7.5, 1.25))
     problem.addVariables(["BLOCK_SIZE"], [10**i for i in range(5)])
     problem.addVariables(["CUTOFF_RADIUS"], np.arange(1.2, 6.2, 0.2))
 
