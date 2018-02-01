@@ -14,7 +14,7 @@ import string
 
 BASE_DIR = os.getcwd()      # if we get amibitous, this could become a command line param
 output_folder = 'configs'   # this too
-output_file = 'data/22_01_2018_1500_runs.csv'
+output_file = 'data/01_02_2018_1500_runs.csv'
 
 def generateConfig_2D(params, checkpoint=None):
     # these are defautls which are used if certain parameters aren't defined for generateConfig_2D
@@ -40,9 +40,6 @@ def write_times(times, path = 'out.csv'):
         writer = csv.writer(f)
         writer.writerows(times)
 
-def density(mol_x, mol_y, domain_x, domain_y):
-    return (1.0*mol_x*mol_y)/(1.0*domain_x*domain_y)
-
 def generateParamSpace():
     problem = csp.Problem()
     problem.addVariables(["MOL_X", "MOL_Y"], range(15, 100, 5))
@@ -53,11 +50,16 @@ def generateParamSpace():
 
     problem.addConstraint(lambda molecules, direction: molecules <= direction, ("MOL_X","DOMAIN_SIZE_X"))
     problem.addConstraint(lambda molecules, direction: molecules <= direction, ("MOL_Y","DOMAIN_SIZE_Y")) 
+
     problem.addConstraint(lambda domain_size, cell_size: (domain_size % cell_size) == 0, ("DOMAIN_SIZE_X", "LINKED_CELL_SIZE_X"))
     problem.addConstraint(lambda domain_size, cell_size: (domain_size % cell_size) == 0, ("DOMAIN_SIZE_Y", "LINKED_CELL_SIZE_Y"))
-    problem.addConstraint(lambda block_size, cell_size: (cell_size % block_size)  >= 4,  ("BLOCK_SIZE", "LINKED_CELL_SIZE_X"))
-    problem.addConstraint(lambda block_size, cell_size: (cell_size % block_size)  >= 4,   ("BLOCK_SIZE", "LINKED_CELL_SIZE_Y"))
+
+    problem.addConstraint(lambda domain_size, cell_size: (domain_size / cell_size) >= 4, ("DOMAIN_SIZE_X", "LINKED_CELL_SIZE_X"))
+    problem.addConstraint(lambda domain_size, cell_size: (domain_size / cell_size) >= 4, ("DOMAIN_SIZE_Y", "LINKED_CELL_SIZE_Y"))
+    
+    density = lambda mol_x, mol_y, domain_x, domain_y: (1.0*mol_x*mol_y)/(1.0*domain_x*domain_y)
     problem.addConstraint(lambda *args: density(*args) < 1.0, ("MOL_X", "MOL_Y", "DOMAIN_SIZE_X", "DOMAIN_SIZE_Y"))
+
     problem.addConstraint(lambda cutoff, linked_x, linked_y: cutoff <= min(linked_x, linked_y),
                           ("CUTOFF_RADIUS", "LINKED_CELL_SIZE_X", "LINKED_CELL_SIZE_Y"))
     return problem.getSolutions()
