@@ -7,14 +7,14 @@ import subprocess
 import collections
 import random
 import sys
+import argparse
 import constraint as csp
 import argparse
 import pickle
 import string
 
-BASE_DIR = os.getcwd()      # if we get amibitous, this could become a command line param
-output_folder = 'configs'   # this too
-output_file = 'data/01_02_2018_1500_runs.csv'
+BASE_DIR = os.getcwd()
+output_folder = 'configs'
 
 def generateConfig_2D(params, checkpoint=None):
     # these are defautls which are used if certain parameters aren't defined for generateConfig_2D
@@ -23,13 +23,13 @@ def generateConfig_2D(params, checkpoint=None):
     defaults.update(params)
 
     if checkpoint:
-        with open('config2D_template_checkpoint.xml') as f: template = f.read()
+        with open('templates/config2D_template_checkpoint.xml') as f: template = f.read()
         for param, val in defaults.items():
             template = template.replace(param, str(val))
         return template, defaults
 
     else:
-        with open('config2D_template.xml') as f:
+        with open('templates/config2D_template.xml') as f:
             template = f.read()
         for param, val in defaults.items():
             template = template.replace(param, str(val))
@@ -64,12 +64,10 @@ def generateParamSpace():
                           ("CUTOFF_RADIUS", "LINKED_CELL_SIZE_X", "LINKED_CELL_SIZE_Y"))
     return problem.getSolutions()
 
-
-def runSimulation():
+def runSimulation(n, output_file):
     path = os.path.join(BASE_DIR, output_folder)
     if not os.path.exists(path): os.mkdir(path)
 
-    n = 1500
     all_configs = generateParamSpace()
     full_config = random.sample(all_configs, n)
 
@@ -100,5 +98,17 @@ def runSimulation():
 
     write_times(times, path = output_file)
 
+def clean_temp_files():
+    try:
+        subprocess.call(['bash',  'clean'])
+    except Exception as e:
+        print e
+
 if __name__ == '__main__':
-    runSimulation()
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('N', type=int, help='number of samples to take from parameter space')
+    parser.add_argument('output_file', help='path to save (parameter, time) pairs')
+    args = parser.parse_args()
+                        
+    runSimulation(args.N, args.output_file)
+    clean_temp_files()
