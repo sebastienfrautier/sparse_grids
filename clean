@@ -1,0 +1,5 @@
+rm *.vtk 
+rm *.dat 
+rm *.checkpoint 
+rm checkpoints/*
+rm configs/*
